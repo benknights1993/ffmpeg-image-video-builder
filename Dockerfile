@@ -1,8 +1,8 @@
 FROM debian:bullseye-slim
 
-# Install ffmpeg and python3
+# Install ffmpeg and curl
 RUN apt-get update && \
-    apt-get install -y ffmpeg python3 python3-pip && \
+    apt-get install -y ffmpeg curl && \
     apt-get clean
 
 # Set working directory
@@ -11,8 +11,8 @@ WORKDIR /app
 # Copy all files into the container
 COPY . .
 
-# Install Dropbox SDK
-RUN pip3 install dropbox
+# Make the upload script executable
+RUN chmod +x upload-test.sh
 
 # Run the script
-CMD ["python3", "upload-test.py"]
+CMD ["bash", "upload-test.sh"]

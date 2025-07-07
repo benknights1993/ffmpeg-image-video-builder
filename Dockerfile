@@ -1,26 +1,23 @@
 # Use official Debian base image
-FROM debian:bullseye-slim
+FROM python:3.9-slim
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-  ffmpeg \
-  curl \
-  python3 \
-  python3-pip \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install Dropbox SDK
-RUN pip3 install dropbox
-
-# Set environment variable from Railway
-ENV DROPBOX_TOKEN=${DROPBOX_TOKEN}
-
-# Copy your script into the container
-COPY upload-test.py /app/upload-test.py
+# Install ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg && apt-get clean
 
 # Set working directory
 WORKDIR /app
 
-# Run the script when container starts
-CMD ["python3", "upload-test.py"]
+# Copy all required files into the container
+COPY upload-test.py ./
+COPY background_audio.mp3 ./
+COPY dalle_image_1.png ./
+COPY dalle_image_2.png ./
+
+# Install Dropbox SDK
+RUN pip install dropbox
+
+# Set environment variable from Railway
+ENV DROPBOX_TOKEN=${DROPBOX_TOKEN}
+
+# Run the script
+CMD ["python", "upload-test.py"]

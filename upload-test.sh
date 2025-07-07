@@ -3,31 +3,27 @@
 echo "🔽 Downloading files from Dropbox..."
 
 # Download dalle_image_1.png
-curl -L --fail -X POST https://content.dropboxapi.com/2/files/download \
+curl -X POST https://content.dropboxapi.com/2/files/download \
   --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
   --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/dalle_image_1.png\"}" \
-  --header "Content-Type: application/octet-stream" \
   --output dalle_image_1.png
 
 # Download dalle_image_2.png
-curl -L --fail -X POST https://content.dropboxapi.com/2/files/download \
+curl -X POST https://content.dropboxapi.com/2/files/download \
   --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
   --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/dalle_image_2.png\"}" \
-  --header "Content-Type: application/octet-stream" \
   --output dalle_image_2.png
 
 # Download background_audio.mp3
-curl -L --fail -X POST https://content.dropboxapi.com/2/files/download \
+curl -X POST https://content.dropboxapi.com/2/files/download \
   --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
   --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/background_audio.mp3\"}" \
-  --header "Content-Type: application/octet-stream" \
   --output background_audio.mp3
 
 echo "✂️ Trimming background audio to 20 seconds..."
 ffmpeg -y -t 20 -i background_audio.mp3 -acodec copy trimmed_audio.mp3
 
 echo "🎬 Creating vertical video with pan/zoom + fade transitions..."
-
 ffmpeg -y \
   -loop 1 -t 10 -i dalle_image_1.png \
   -loop 1 -t 10 -i dalle_image_2.png \
@@ -42,3 +38,12 @@ ffmpeg -y \
   output_video.mp4
 
 echo "✅ Video created: output_video.mp4"
+
+echo "📤 Uploading video to Dropbox..."
+curl -X POST https://content.dropboxapi.com/2/files/upload \
+  --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
+  --header "Content-Type: application/octet-stream" \
+  --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/output_video.mp4\", \"mode\": \"overwrite\"}" \
+  --data-binary @output_video.mp4
+
+echo "✅ Upload complete!"

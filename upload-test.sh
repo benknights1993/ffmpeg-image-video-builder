@@ -1,49 +1,45 @@
-#!/bin/bash
+import os
+import dropbox
+import subprocess
 
-echo "🔽 Downloading files from Dropbox..."
+# Load Dropbox token from env
+DROPBOX_TOKEN = os.environ.get("DROPBOX_TOKEN")
 
-# Download dalle_image_1.png
-curl -X POST https://content.dropboxapi.com/2/files/download \
-  --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
-  --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/dalle_image_1.png\"}" \
-  --output dalle_image_1.png
+# Files
+image1 = "dalle_image_1.png"
+image2 = "dalle_image_2.png"
+original_audio = "background_audio.mp3"
+trimmed_audio = "trimmed_audio.mp3"
+output_video = "output_video.mp4"
 
-# Download dalle_image_2.png
-curl -X POST https://content.dropboxapi.com/2/files/download \
-  --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
-  --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/dalle_image_2.png\"}" \
-  --output dalle_image_2.png
+# Step 1: Trim audio to 20s
+subprocess.run([
+    "ffmpeg", "-y", "-i", original_audio,
+    "-t", "20", "-acodec", "copy", trimmed_audio
+])
 
-# Download background_audio.mp3
-curl -X POST https://content.dropboxapi.com/2/files/download \
-  --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
-  --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/background_audio.mp3\"}" \
-  --output background_audio.mp3
+# Step 2: Create vertical video with zoom and fade
+filter_complex = (
+    "[0:v]scale=1080:1920,zoompan=z='min(zoom+0.0015,1.5)':"
+    "d=125:s=1080x1920:fps=25,setsar=1[v0];"
+    "[1:v]scale=1080:1920,zoompan=z='min(zoom+0.0015,1.5)':"
+    "d=125:s=1080x1920:fps=25,setsar=1[v1];"
+    "[v0][v1]xfade=transition=fade:duration=1:offset=9,format=yuv420p[v]"
+)
 
-echo "✂️ Trimming background audio to 20 seconds..."
-ffmpeg -y -t 20 -i background_audio.mp3 -acodec copy trimmed_audio.mp3
+subprocess.run([
+    "ffmpeg", "-y",
+    "-loop", "1", "-t", "10", "-i", image1,
+    "-loop", "1", "-t", "10", "-i", image2,
+    "-i", trimmed_audio,
+    "-filter_complex", filter_complex,
+    "-map", "[v]", "-map", "2:a",
+    "-shortest", output_video
+])
 
-echo "🎬 Creating vertical video with pan/zoom + fade transitions..."
-ffmpeg -y \
-  -loop 1 -t 10 -i dalle_image_1.png \
-  -loop 1 -t 10 -i dalle_image_2.png \
-  -i trimmed_audio.mp3 \
-  -filter_complex "\
-    [0:v]scale=1080:1920,zoompan=z='zoom+0.0005':d=250:s=1080x1920,fade=t=out:st=9:d=1[v0]; \
-    [1:v]scale=1080:1920,zoompan=z='zoom+0.0005':d=250:s=1080x1920,fade=t=in:st=0:d=1[v1]; \
-    [v0][v1]concat=n=2:v=1:a=0[outv]" \
-  -map "[outv]" -map 2:a \
-  -shortest \
-  -preset veryfast \
-  output_video.mp4
+# Step 3: Upload to Dropbox
+dbx = dropbox.Dropbox(DROPBOX_TOKEN)
+with open(output_video, "rb") as f:
+    dbx.files_upload(f.read(), f"/FFmpegUploader/{output_video}", mode=dropbox.files.WriteMode.overwrite)
 
-echo "✅ Video created: output_video.mp4"
-
-echo "📤 Uploading video to Dropbox..."
-curl -X POST https://content.dropboxapi.com/2/files/upload \
-  --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
-  --header "Content-Type: application/octet-stream" \
-  --header "Dropbox-API-Arg: {\"path\": \"/FFmpegUploader/output_video.mp4\", \"mode\": \"overwrite\"}" \
-  --data-binary @output_video.mp4
-
-echo "✅ Upload complete!"
+print("✅ Upload complete!")

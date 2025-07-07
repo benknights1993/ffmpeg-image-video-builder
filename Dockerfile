@@ -1,3 +1,4 @@
+# Use official Debian base image
 FROM debian:bullseye-slim
 
 # Install dependencies
@@ -9,17 +10,17 @@ RUN apt-get update && apt-get install -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Install required Python packages
-RUN pip3 install requests
+# Install Dropbox SDK
+RUN pip3 install dropbox
 
-# Set environment variable
-ENV ACCESS_TOKEN=${ACCESS_TOKEN}
+# Set environment variable from Railway
+ENV DROPBOX_TOKEN=${DROPBOX_TOKEN}
 
-# Copy script
+# Copy your script into the container
 COPY upload-test.py /app/upload-test.py
 
 # Set working directory
 WORKDIR /app
 
-# Run the script
+# Run the script when container starts
 CMD ["python3", "upload-test.py"]

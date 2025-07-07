@@ -13,22 +13,21 @@ subprocess.run([
     "trimmed_audio.mp3"
 ], check=True)
 
-# Step 2: Create video with DALL·E images and trimmed audio
+# Step 2: Combine images + audio into vertical video
 subprocess.run([
     "ffmpeg", "-y",
     "-loop", "1", "-t", "10", "-i", "dalle_image_1.png",
     "-loop", "1", "-t", "10", "-i", "dalle_image_2.png",
-    "-i", "trimmed_audio.mp3",  # audio is now the *third input*
-    "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0,format=yuv420p[v]",
+    "-i", "trimmed_audio.mp3",
+    "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0,scale=1080:-1,format=yuv420p[v]",
     "-map", "[v]",
-    "-map", "2:a",               # this safely refers to trimmed_audio.mp3
-    "-shortest",
-    "-vf", "scale=1080:-1",
+    "-map", "2:a",
     "-r", "30",
+    "-shortest",
     "final_video.mp4"
 ], check=True)
 
-# Step 3: Upload video to Dropbox
+# Step 3: Upload to Dropbox
 dbx = dropbox.Dropbox(DROPBOX_TOKEN)
 with open("final_video.mp4", "rb") as f:
     dbx.files_upload(f.read(), "/FFmpegUploader/final_video.mp4", mode=dropbox.files.WriteMode("overwrite"))

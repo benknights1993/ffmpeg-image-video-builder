@@ -1,24 +1,25 @@
-# Use official Debian base image
 FROM debian:bullseye-slim
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
   ffmpeg \
   curl \
+  python3 \
+  python3-pip \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Set environment variable from Railway
+# Install required Python packages
+RUN pip3 install requests
+
+# Set environment variable
 ENV ACCESS_TOKEN=${ACCESS_TOKEN}
 
-# Copy your upload + ffmpeg script into the container
-COPY upload-test.sh /app/upload-test.sh
+# Copy script
+COPY upload-test.py /app/upload-test.py
 
 # Set working directory
 WORKDIR /app
 
-# Make script executable
-RUN chmod +x upload-test.sh
-
-# Run the script when container starts
-CMD ["bash", "upload-test.sh"]
+# Run the script
+CMD ["python3", "upload-test.py"]

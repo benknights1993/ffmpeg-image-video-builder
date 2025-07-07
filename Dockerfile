@@ -1,13 +1,17 @@
-# Use an image with Python and curl preinstalled
-FROM python:3.10-slim
+FROM debian:bullseye-slim
+
+# Install ffmpeg and curl
+RUN apt-get update && \
+    apt-get install -y ffmpeg curl && \
+    apt-get clean
 
 # Set working directory
 WORKDIR /app
 
-# Copy all files
+# Copy all files into the container
 COPY . .
 
-# Make the script executable
+# Make upload script executable
 RUN chmod +x upload-test.sh
 
 # Run the upload script

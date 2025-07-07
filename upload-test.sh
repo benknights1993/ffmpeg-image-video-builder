@@ -8,12 +8,23 @@ FILES=("dalle_image_1.png" "dalle_image_2.png" "background_audio.mp3")
 
 # Loop through and upload each file
 for FILE in "${FILES[@]}"; do
-  echo "Uploading $FILE to Dropbox..."
-  curl -X POST https://content.dropboxapi.com/2/files/upload \
+  echo "📤 Uploading $FILE to Dropbox..."
+
+  if [ ! -f "$FILE" ]; then
+    echo "❌ File not found: $FILE"
+    continue
+  fi
+
+  RESPONSE=$(curl -s -w "%{http_code}" -o /tmp/upload_response.txt -X POST https://content.dropboxapi.com/2/files/upload \
     --header "Authorization: Bearer $ACCESS_TOKEN" \
     --header "Dropbox-API-Arg: {\"path\": \"/video-assets/$FILE\", \"mode\": \"overwrite\"}" \
     --header "Content-Type: application/octet-stream" \
-    --data-binary @"$FILE"
+    --data-binary @"$FILE")
+
+  echo "Response code: $RESPONSE"
+  echo "Response body:"
+  cat /tmp/upload_response.txt
+  echo
 done
 
-echo "✅ All files uploaded."
+echo "✅ All uploads attempted."

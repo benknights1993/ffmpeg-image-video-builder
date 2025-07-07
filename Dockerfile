@@ -15,4 +15,4 @@ COPY . .
 RUN chmod +x builder.sh
 
 # Run the script
-CMD ["python3", "upload-test.py"]
+CMD ["python3", "upload-test.py"] 
